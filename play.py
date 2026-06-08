@@ -34,15 +34,19 @@ def main():
 
                 if (0 < round(mouse_x / TILE_SIZE) <= BOARD_SIZE) and (0 < round(mouse_y / TILE_SIZE) <= BOARD_SIZE):
                     j, i = board.snap_to_board(mouse_x, mouse_y)
-                    if board.board[i][j] == -1:
+                    if board.position[i][j] == -1:
+                        board.prev_i = i
+                        board.prev_j = j
 
                         if player_turn == 'w':
                             board.place_white_piece(i, j)
-                            print(board.game_over(i, j, player_turn))
+                   
+                            print(board.game_over(player_turn))
                             player_turn = 'b'
                         elif player_turn == 'b':
                             board.place_black_piece(i, j)
-                            print(board.game_over(i, j, player_turn))
+    
+                            print(board.game_over(player_turn))
                             player_turn = 'w'
                     #board.console_check()
 

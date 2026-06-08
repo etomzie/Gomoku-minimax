@@ -20,7 +20,7 @@ class Board(Position):
 
         
     def console_check(self,):
-        print(*self.board, sep = '\n') 
+        print(*self.position, sep = '\n') 
         print()   
     
 

@@ -1,5 +1,6 @@
 
 
+
 class Position():
     def __init__(self, BOARD_SIZE, TILE_SIZE):
 
@@ -13,8 +14,13 @@ class Position():
         self.prev_j = -1
         
     
-    def eval_game_position():
-        pass
+    def eval_game_position(self, player_turn):
+        if player_turn:
+            chk_state = 2
+        else:
+            chk_state = 1
+        
+        return 0
     
     
     def game_over(self, player_turn: str):
@@ -25,7 +31,7 @@ class Position():
 
         in_row = 0
         for i in range(max(0, self.prev_i - 5), min(self.BOARD_SIZE - 1, self.prev_i + 5)):
-            if self.board[i][self.prev_j] == chk_state:
+            if self.position[i][self.prev_j] == chk_state:
                 in_row += 1
             else:
                 in_row = 0
@@ -34,7 +40,7 @@ class Position():
                 return True
         in_row = 0
         for j in range(max(0, self.prev_j - 5), min(self.BOARD_SIZE - 1, self.prev_j + 5)):
-            if self.board[self.prev_i][j] == chk_state:
+            if self.position[self.prev_i][j] == chk_state:
                 in_row += 1
             else:
                 in_row = 0
@@ -45,7 +51,7 @@ class Position():
         in_row = 0
         i = max(0, self.prev_i - 5)
         for j in range(max(0, self.prev_j - 5), min(self.BOARD_SIZE - 1, self.prev_j + 5)):
-            if self.board[i][j] == chk_state:
+            if self.position[i][j] == chk_state:
                 in_row += 1
             else:
                 in_row = 0
@@ -60,7 +66,7 @@ class Position():
         in_row = 0
         i = min(self.BOARD_SIZE - 1, self.prev_i + 5)
         for j in range(max(0, self.prev_j - 5), min(self.BOARD_SIZE - 1, self.prev_j + 5)):
-            if self.board[i][j] == chk_state:
+            if self.position[i][j] == chk_state:
                 in_row += 1
             else:
                 in_row = 0
