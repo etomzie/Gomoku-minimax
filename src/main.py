@@ -3,6 +3,7 @@ from pygame.locals import *
 
 from copy import deepcopy
 import math
+from sys import stdout
 
 from Utils.board import Board
 from Utils.position import Position
@@ -23,10 +24,14 @@ screen = pygame.display.set_mode((windowWidth, windowHeight))
 pygame.display.set_caption(GameSettings.TITLE)
 
 
-board = Board(BOARD_SIZE, TILE_SIZE)
+board = Board()
 
 EVALUATOR = Evaluator()
+    
 DIRECTIONS = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+EMPTY = '.'
+WHITE = 'W'
+BLACK = 'B'
 
 """TODO
 represent board with bitmask of size 15 * 15
@@ -38,16 +43,19 @@ represent board with bitmask of size 15 * 15
 
 def minimax(pos: Position, depth: int, maxingPlayer: bool):
     if pos.is_game_over():
-        if pos.turn == 'W': # White to move: white lost
-            return float("-inf") 
+        #stdout.write("GAME OVER\n")
+        if pos.turn == WHITE: # White to move: white lost
+            return (pos.prev_i, pos.prev_j), float("-inf") 
         else:
-            return float("inf")
+            return (pos.prev_i, pos.prev_j), float("inf")
 
     if depth == 0:
-        return EVALUATOR.static_eval(pos)
+        #stdout.write("DEPTH = 0\n")
+        return (pos.prev_i, pos.prev_j), EVALUATOR.static_eval(pos)
 
     if pos.prev_i == -1 and pos.prev_j == -1:
-        return 
+        #stdout.write("first move\n")
+        return (BOARD_SIZE // 2, BOARD_SIZE // 2), 0
     
     best_move = (-1, -1)
 
@@ -61,19 +69,31 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
                 ni, nj = di + i, dj + j
                 if not(0 <= ni < BOARD_SIZE and 0 <= nj < BOARD_SIZE): continue
                 if (ni, nj) in vis: continue
-                if pos.position[ni][nj] != -1: continue
-
-                now_pos = deepcopy(pos)
-                now_pos.position[ni][nj] = 1 # maxing black
-                now_pos.moves.add((ni, nj))
-                now_pos.prev_i = ni
-                now_pos.prev_j = nj
-                now_pos.turn = 'B'
+                if pos.position[ni][nj] != EMPTY: continue
+                vis.add((ni, nj))
                 
+                pos.position[ni][nj] = WHITE
+                pos.moves.add((ni, nj))
+                old_turn = pos.turn
+                old_i = pos.prev_i
+                old_j = pos.prev_j
 
-                move, eval = minimax(now_pos, depth - 1, not maxingPlayer)
+                pos.turn = BLACK
+                pos.prev_i = ni
+                pos.prev_j = nj
+
+                _, eval = minimax(pos, depth-1, False)
+
+                # undo
+                pos.position[ni][nj] = EMPTY
+                pos.moves.remove((ni, nj))
+                pos.turn = old_turn
+                pos.prev_i = old_i
+                pos.prev_j = old_j
+                
+                
                 if eval > maxEval:
-                    best_move = move
+                    best_move = (ni, nj)
                     maxEval = eval
 
         return best_move, maxEval
@@ -90,20 +110,31 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
                 ni, nj = di + i, dj + j
                 if not(0 <= ni < BOARD_SIZE and 0 <= nj < BOARD_SIZE): continue
                 if (ni, nj) in vis: continue
-                if pos.position[ni][nj] != -1: continue
-
-                now_pos = deepcopy(pos)
-                now_pos.position[ni][nj] = 1 # maxing black
-                now_pos.moves.add((ni, nj))
-                now_pos.prev_i = ni
-                now_pos.prev_j = nj
-                now_pos.turn = "W"
-                
+                if pos.position[ni][nj] != EMPTY: continue
+                vis.add((ni, nj))
                 
 
-                move, eval = minimax(now_pos, depth - 1, not maxingPlayer)
+                pos.position[ni][nj] = BLACK
+                pos.moves.add((ni, nj))
+                old_turn = pos.turn
+                old_i = pos.prev_i
+                old_j = pos.prev_j
+
+                pos.turn = WHITE
+                pos.prev_i = ni
+                pos.prev_j = nj
+
+                _, eval = minimax(pos, depth-1, True)
+
+                # undo
+                pos.position[ni][nj] = EMPTY
+                pos.moves.remove((ni, nj))
+                pos.turn = old_turn
+                pos.prev_i = old_i
+                pos.prev_j = old_j
+                
                 if eval < minEval:
-                    best_move = move
+                    best_move = (ni, nj)
                     minEval = eval
 
         return best_move, minEval
@@ -115,7 +146,7 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
 def init_minimax():
     
     move, eval = minimax(board.position, MAX_SEARCH_DEPTH, True)
-    print(move)
+    #print(move, eval)
     return move
     
 
@@ -129,22 +160,35 @@ def main():
                 pygame.quit()
                 sys.exit()   
             
-            if board.turn == GameSettings.PLAYER:
+            
+            if board.position.turn == GameSettings.PLAYER:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = event.pos
+                    
 
                     if (0 < int(mouse_x / TILE_SIZE) <= BOARD_SIZE) and (0 < int(mouse_y / TILE_SIZE) <= BOARD_SIZE):
                         j, i = board.snap_to_board(mouse_x, mouse_y)
-                        if board.position[i][j] == -1:
+                        #board.console_check()
+                        #print(i, j)
+                        if board.position.position[i][j] == EMPTY:
                             board.place_white_piece(i, j)
-                            board.turn = GameSettings.AI
+                            board.position.prev_i = i
+                            board.position.prev_j = j
+                            board.position.moves.add((i, j))
+                            
+                            board.position.turn = GameSettings.AI
 
     
             else:
-                ai_move_info = init_minimax()
+                info_i, info_j = init_minimax()
+                board.place_black_piece(info_i, info_j)
+                board.position.prev_i = info_i
+                board.position.prev_j = info_j
+                board.position.moves.add((info_i, info_j))
+                
+                #board.console_check()
 
-
-                board.turn = GameSettings.PLAYER
+                board.position.turn = GameSettings.PLAYER
                 
                 
                 

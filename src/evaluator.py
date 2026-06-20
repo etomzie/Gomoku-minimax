@@ -12,6 +12,8 @@ class Evaluator():
         for line in self.get_all_lines(position.position):
             black_score += self.evaluate_line(line, "B")
             white_score += self.evaluate_line(line, "W")
+        
+        return white_score - black_score
 
 
 
