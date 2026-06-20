@@ -1,6 +1,6 @@
 import pygame, sys
 from pygame.locals import *
-from Utils.Postition import Position
+from Utils.position import Position
 
 import random
 
@@ -14,9 +14,9 @@ class Board(Position):
 
 
     def place_black_piece(self, i, j):
-        self.position[i][j] = 1
+        self.position[i][j] = 'B'
     def place_white_piece(self, i, j):
-        self.position[i][j] = 2
+        self.position[i][j] = 'W'
 
         
     def console_check(self,):

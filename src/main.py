@@ -4,56 +4,47 @@ from pygame.locals import *
 from copy import deepcopy
 import math
 
-from Utils.Board import Board
-from Utils.Postition import Position
-
-MAX_SEARCH_DEPTH = 6
-
-BOARD_SIZE = 15
-
-TILE_SIZE = 40
-
-windowHeight = (BOARD_SIZE + 1) * TILE_SIZE
-windowWidth = (BOARD_SIZE + 1) * TILE_SIZE
+from Utils.board import Board
+from Utils.position import Position
+from settings import GameSettings
+from evaluator import Evaluator
 
 pygame.init()
+
+MAX_SEARCH_DEPTH = GameSettings.MAX_SEARCH_DEPTH
+BOARD_SIZE = GameSettings.BOARD_SIZE
+TILE_SIZE = GameSettings.TILE_SIZE
+windowHeight = GameSettings.SCREEN_HEIGHT
+windowWidth = GameSettings.SCREEN_WIDTH
+
+
 screen = pygame.display.set_mode((windowWidth, windowHeight))
 
-pygame.display.set_caption('Gomoku Game')
+pygame.display.set_caption(GameSettings.TITLE)
 
 
 board = Board(BOARD_SIZE, TILE_SIZE)
 
-
+EVALUATOR = Evaluator()
 DIRECTIONS = [(0, 1), (0, -1), (1, 0), (-1, 0)]
 
-"""function minimax(position, depth, maximizingPlayer)
-	if depth == 0 or game over in position
-		return static evaluation of position
- 
-	if maximizingPlayer
-		maxEval = -infinity
-		for each child of position
-			eval = minimax(child, depth - 1, false)
-			maxEval = max(maxEval, eval)
-		return maxEval
- 
-	else
-		minEval = +infinity
-		for each child of position
-			eval = minimax(child, depth - 1, true)
-			minEval = min(minEval, eval)
-		return minEval
- 
- 
-// initial call
-minimax(currentPosition, 3, true)
+"""TODO
+represent board with bitmask of size 15 * 15
+
+
 """
 
+
+
 def minimax(pos: Position, depth: int, maxingPlayer: bool):
-    over = pos.game_over()
-    if depth == 0 or over:
-        return pos.static_eval_position(over)
+    if pos.is_game_over():
+        if pos.turn == 'W': # White to move: white lost
+            return float("-inf") 
+        else:
+            return float("inf")
+
+    if depth == 0:
+        return EVALUATOR.static_eval(pos)
 
     if pos.prev_i == -1 and pos.prev_j == -1:
         return 
@@ -61,7 +52,7 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
     best_move = (-1, -1)
 
 
-    if maxingPlayer:
+    if maxingPlayer: # WHITE
         maxEval = float("-inf")
         vis = set()
          
@@ -77,7 +68,7 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
                 now_pos.moves.add((ni, nj))
                 now_pos.prev_i = ni
                 now_pos.prev_j = nj
-                now_pos.player_turn = True
+                now_pos.turn = 'B'
                 
 
                 move, eval = minimax(now_pos, depth - 1, not maxingPlayer)
@@ -89,7 +80,7 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
 
 
          
-    else:
+    else: # BLACK
         minEval = float("inf")
 
         vis = set()
@@ -106,7 +97,7 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
                 now_pos.moves.add((ni, nj))
                 now_pos.prev_i = ni
                 now_pos.prev_j = nj
-                now_pos.player_turn = False
+                now_pos.turn = "W"
                 
                 
 
@@ -124,6 +115,8 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
 def init_minimax():
     
     move, eval = minimax(board.position, MAX_SEARCH_DEPTH, True)
+    print(move)
+    return move
     
 
     
@@ -136,7 +129,7 @@ def main():
                 pygame.quit()
                 sys.exit()   
             
-            if board.player_turn:
+            if board.turn == GameSettings.PLAYER:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = event.pos
 
@@ -144,14 +137,14 @@ def main():
                         j, i = board.snap_to_board(mouse_x, mouse_y)
                         if board.position[i][j] == -1:
                             board.place_white_piece(i, j)
-                            board.player_turn = False
+                            board.turn = GameSettings.AI
 
     
             else:
                 ai_move_info = init_minimax()
 
 
-                board.player_turn = True
+                board.turn = GameSettings.PLAYER
                 
                 
                 

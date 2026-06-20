@@ -1,5 +1,4 @@
-
-
+from settings import GameSettings
 
 class Position():
     def __init__(self, BOARD_SIZE, TILE_SIZE):
@@ -8,26 +7,25 @@ class Position():
         self.TILE_SIZE = TILE_SIZE
         
         self.moves = set()
-        self.position = [[-1] * (BOARD_SIZE) for _ in range((BOARD_SIZE))]
+        self.position = [['.'] * (BOARD_SIZE) for _ in range((BOARD_SIZE))]
         
         self.prev_i = -1
         self.prev_j = -1
+
+        self.turn = GameSettings.PLAYER
+
+
+
+    
+    
         
     
-    def eval_game_position(self, player_turn):
-        if player_turn:
-            chk_state = 2
-        else:
-            chk_state = 1
-        
-        return 0
     
-    
-    def game_over(self, player_turn: str):
-        if player_turn == 'b':
-            chk_state = 1
+    def is_game_over(self):
+        if self.turn == GameSettings.PLAYER:
+            chk_state = GameSettings.AI
         else:
-            chk_state = 2
+            chk_state = GameSettings.PLAYER
 
         in_row = 0
         for i in range(max(0, self.prev_i - 5), min(self.BOARD_SIZE - 1, self.prev_i + 5)):
