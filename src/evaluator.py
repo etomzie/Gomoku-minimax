@@ -20,15 +20,33 @@ class Evaluator():
     def evaluate_line(self, line, player):
         s = ''.join(line)
 
-        if player == "B":
-            stone = "B"
-        else:
-            stone = "W"
-
+        stone = player
         score = 0
 
-        score += s.count(f".{stone*4}.") * 100000
-        score += s.count(f".{stone*3}.") * 1000
+        patterns = {
+            f"{stone*5}":       10000000,  # Five in a row
+
+            f".{stone*4}.":      100000,   # Open four
+            f"{stone*4}.":        10000,   # Closed four
+            f".{stone*4}":        10000,
+
+            f".{stone*3}.":        1000,   # Open three
+            f"{stone*3}.":          100,   # Closed three
+            f".{stone*3}":          100,
+
+            f".{stone*2}.":          50,   # Open two
+
+            # Broken patterns
+            f"{stone*2}.{stone*2}": 5000,  # XX_XX
+            f"{stone}.{stone*3}":   3000,  # X_XXX
+            f"{stone*3}.{stone}":   3000,  # XXX_X
+
+            f"{stone}.{stone*2}":    200,  # X_XX
+            f"{stone*2}.{stone}":    200,  # XX_X
+        }
+
+        for pattern, value in patterns.items():
+            score += s.count(pattern) * value
 
         return score
     
