@@ -5,7 +5,7 @@ from copy import deepcopy
 import math
 from sys import stdout
 
-from Utils.board import Board
+from Utils.Board import Board
 from Utils.position import Position
 from settings import GameSettings
 from evaluator import Evaluator
@@ -29,7 +29,7 @@ board = Board()
 EVALUATOR = Evaluator()
     
 DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1), 
-              (0, -1), (1, 0), 
+              (0, -1), (0, 1), 
               (1, -1), (1, 0), (1, 1)] 
 EMPTY = '.'
 WHITE = 'W'
@@ -117,7 +117,6 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
                 if (ni, nj) in vis: continue
                 if pos.position[ni][nj] != EMPTY: continue
                 vis.add((ni, nj))
-                
 
                 pos.position[ni][nj] = BLACK
                 pos.moves.add((ni, nj))
@@ -149,7 +148,7 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
 
 
 def init_minimax():
-    maxing = False if board.position.turn == 'W' else True
+    maxing = True if board.position.turn == 'W' else False
     print(maxing)
     move, eval = minimax(board.position, MAX_SEARCH_DEPTH, maxing)
     print(move, eval)
