@@ -18,6 +18,22 @@ class Position():
 
 
     
+    def five_in_direction(self, dx, dy, chk_state):
+        count = 1
+
+        i, j = self.prev_i + dx, self.prev_j + dy
+        while 0 <= i < BS and 0 <= j < BS and self.position[i][j] == chk_state:
+            count += 1
+            i += dx
+            j += dy
+
+        i, j = self.prev_i - dx, self.prev_j - dy
+        while 0 <= i < BS and 0 <= j < BS and self.position[i][j] == chk_state:
+            count += 1
+            i -= dx
+            j -= dy
+
+        return count >= 5
     
         
     
@@ -27,56 +43,12 @@ class Position():
             chk_state = GameSettings.AI
         else:
             chk_state = GameSettings.PLAYER
-
-        in_row = 0
-        for i in range(max(0, self.prev_i - 5), min(BS - 1, self.prev_i + 5)):
-            if self.position[i][self.prev_j] == chk_state:
-                in_row += 1
-            else:
-                in_row = 0
-            
-            if in_row == 5:
-                return True
-        in_row = 0
-        for j in range(max(0, self.prev_j - 5), min(BS - 1, self.prev_j + 5)):
-            if self.position[self.prev_i][j] == chk_state:
-                in_row += 1
-            else:
-                in_row = 0
-            
-            if in_row == 5:
-                return True
-            
-        in_row = 0
-        i = max(0, self.prev_i - 5)
-        for j in range(max(0, self.prev_j - 5), min(BS - 1, self.prev_j + 5)):
-            if self.position[i][j] == chk_state:
-                in_row += 1
-            else:
-                in_row = 0
-            
-            if in_row == 5:
-                return True            
-            i += 1
-            if i >= BS:
-                break
-
-
-        in_row = 0
-        i = min(BS - 1, self.prev_i + 5)
-        for j in range(max(0, self.prev_j - 5), min(BS - 1, self.prev_j + 5)):
-            if self.position[i][j] == chk_state:
-                in_row += 1
-            else:
-                in_row = 0
-            
-            if in_row == 5:
-                return True            
-            i -= 1
-            if i < 0:
-                break
-
-
-        return False
+        
+        return (
+            self.five_in_direction(1, 0, chk_state) or
+            self.five_in_direction(0, 1, chk_state) or
+            self.five_in_direction(1, 1, chk_state) or
+            self.five_in_direction(1, -1, chk_state)
+        )
          
             

@@ -53,5 +53,11 @@ class Board():
                 elif self.position.position[i][j] == WHITE:
                     pygame.draw.circle(screen, (255 ,255 , 255), ((j + 1) * TS, (i + 1) * TS), TS / 2 - 1)
 
-
+    def end_game(self):
+        if self.position.turn == BLACK:
+            print("WHITE WINS")
+        elif self.position.turn == WHITE:
+            print("BLACK WINS")
+        else:
+            print("DRAW")
         

@@ -1,6 +1,6 @@
 import pygame, sys
 from pygame.locals import *
-from Utils.Board import Board
+from src.Utils.board import Board
 
 
 def main():

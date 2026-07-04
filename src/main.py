@@ -28,14 +28,16 @@ board = Board()
 
 EVALUATOR = Evaluator()
     
-DIRECTIONS = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1), 
+              (0, -1), (1, 0), 
+              (1, -1), (1, 0), (1, 1)] 
 EMPTY = '.'
 WHITE = 'W'
 BLACK = 'B'
 
 """TODO
 represent board with bitmask of size 15 * 15
-
+implement alphabeta
 
 """
 
@@ -43,11 +45,13 @@ represent board with bitmask of size 15 * 15
 
 def minimax(pos: Position, depth: int, maxingPlayer: bool):
     if pos.is_game_over():
-        #stdout.write("GAME OVER\n")
-        if pos.turn == WHITE: # White to move: white lost
-            return (pos.prev_i, pos.prev_j), float("-inf") 
-        else:
+        winner = BLACK if pos.turn == WHITE else WHITE
+        print(f"Game over {pos.turn} {winner}")
+        if winner == WHITE:
             return (pos.prev_i, pos.prev_j), float("inf")
+        else:
+            return (pos.prev_i, pos.prev_j), float("-inf")
+
 
     if depth == 0:
         #stdout.write("DEPTH = 0\n")
@@ -87,6 +91,7 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
                 # undo
                 pos.position[ni][nj] = EMPTY
                 pos.moves.remove((ni, nj))
+
                 pos.turn = old_turn
                 pos.prev_i = old_i
                 pos.prev_j = old_j
@@ -144,9 +149,10 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool):
 
 
 def init_minimax():
-    
-    move, eval = minimax(board.position, MAX_SEARCH_DEPTH, True)
-    #print(move, eval)
+    maxing = False if board.position.turn == 'W' else True
+    print(maxing)
+    move, eval = minimax(board.position, MAX_SEARCH_DEPTH, maxing)
+    print(move, eval)
     return move
     
 
@@ -171,7 +177,11 @@ def main():
                         #board.console_check()
                         #print(i, j)
                         if board.position.position[i][j] == EMPTY:
-                            board.place_white_piece(i, j)
+                            if GameSettings.PLAYER == "B":
+                                board.place_black_piece(i, j)
+                            else:
+                                board.place_white_piece(i, j)
+
                             board.position.prev_i = i
                             board.position.prev_j = j
                             board.position.moves.add((i, j))
@@ -181,7 +191,11 @@ def main():
     
             else:
                 info_i, info_j = init_minimax()
-                board.place_black_piece(info_i, info_j)
+                if GameSettings.AI == "B":
+                    board.place_black_piece(info_i, info_j)
+                else:
+                    board.place_white_piece(info_i, info_j)
+
                 board.position.prev_i = info_i
                 board.position.prev_j = info_j
                 board.position.moves.add((info_i, info_j))
@@ -189,6 +203,10 @@ def main():
                 #board.console_check()
 
                 board.position.turn = GameSettings.PLAYER
+            #board.console_check()
+        if board.position.is_game_over():
+            board.end_game()
+            exit()
                 
                 
                 
