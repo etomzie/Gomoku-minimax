@@ -44,13 +44,23 @@ W_pat = {
 B_pat_imm = [f"{'B'*5}", f".{'B'*4}."]
 W_pat_imm = [f"{'W'*5}", f".{'W'*4}."]
 
+DIRECTIONS = []
+CHECK_RADIUS = GameSettings.CHECK_RADIUS
+for i in range(CHECK_RADIUS * -1, CHECK_RADIUS + 1):
+    for j in range(CHECK_RADIUS * -1, CHECK_RADIUS + 1):
+        if i == 0 and j == 0:
+            continue
+        DIRECTIONS.append((i, j))
+
 
 
 class Evaluator():
     def __init__(self):
-        pass
+        self.count = 0
 
     def static_eval(self, position: Position):
+        self.count += 1
+
         black_score = 0
         white_score = 0
         
@@ -130,3 +140,20 @@ class Evaluator():
 
             if len(diag) >= 5:
                 yield diag
+
+    def quick_eval_move(self, pos, move):
+        i,j=move
+
+        score=0
+
+        for di,dj in DIRECTIONS:
+            ni=i+di
+            nj=j+dj
+
+            if 0 <= ni < GameSettings.BOARD_SIZE and 0 <= nj < GameSettings.BOARD_SIZE:
+                if pos.position[ni][nj] == 'W':
+                    score+=10
+                elif pos.position[ni][nj] == 'B':
+                    score+=10
+
+        return score

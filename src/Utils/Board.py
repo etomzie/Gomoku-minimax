@@ -7,7 +7,6 @@ from settings import GameSettings
 
 import random
 
-
 EMPTY = '.'
 WHITE = 'W'
 BLACK = 'B'
@@ -56,8 +55,14 @@ class Board():
     def end_game(self):
         if self.position.turn == BLACK:
             print("WHITE WINS")
+
         elif self.position.turn == WHITE:
             print("BLACK WINS")
         else:
             print("DRAW")
+
+    def draw_GameOver(self, screen):
+        screen.fill(255, 255, 255)
+        
+
         

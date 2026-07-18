@@ -13,6 +13,7 @@ class Position():
         self.prev_i = -1
         self.prev_j = -1
 
+        self.zobrist_hash = 0
         self.turn = GameSettings.PLAYER
 
 
