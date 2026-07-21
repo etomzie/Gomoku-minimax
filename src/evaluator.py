@@ -3,43 +3,58 @@ from Utils.position import Position
 
 B_pat = {
     # Win
-    f"{'B'*5}":             1_000_000,
+    "BBBBB":      1000000,
 
-    # Open four
-    f".{'B'*4}.":             100_000,
+    # Fours
+    ".BBBB.":      100000,
 
-    # Closed four
-    f"{'B'*4}.":               10_000,
-    f".{'B'*4}":               10_000,
+    "BBBB.":        10000,
+    ".BBBB":        10000,
 
-    # Broken fours
-    f"{'B'*3}.B":              10_000,
-    f"{'B'*2}.{'B'*2}":        10_000,
-    f"B.{'B'*3}":              10_000,
+    "BBB.B":        10000,
+    "BB.BB":        10000,
+    "B.BBB":        10000,
 
-    # Open three
-    f".{'B'*3}.":               1_000,
+    # Threes
+    ".BBB.":         3000,
 
-    # Broken threes
-    f".{'B'*2}.B.":               500,
-    f".B.{'B'*2}.":               500,
-    f"{'B'*2}.B.":                300,
-    f".B.{'B'*2}":                300,
-    f"B.B.B":                     300,
+    ".BB.B.":        2000,
+    ".B.BB.":        2000,
 
-    # Open two
-    f".{'B'*2}.":                 100,
+    "BB.B.":          800,
+    ".B.BB":          800,
+    "B.B.B":          600,
 
-    # Broken twos
-    f".B.B.":                      50,
-    f"{'B'*2}..":                  20,
-    f"..{'B'*2}":                  20,
+    # Twos
+    ".BB.":           200,
+
+    ".B.B.":          100,
+    "BB..":            30,
+    "..BB":            30,
 }
 
 W_pat = {
     pattern.replace("B", "W"): score
     for pattern, score in B_pat.items()
 }
+PATTERNS = {}
+
+for pattern, value in W_pat.items():
+    PATTERNS[pattern] = value
+
+for pattern, value in B_pat.items():
+    PATTERNS[pattern] = -value
+
+PATTERNS_BY_LENGTH = {}
+
+for pattern, value in PATTERNS.items():
+    length = len(pattern)
+
+    if length not in PATTERNS_BY_LENGTH:
+        PATTERNS_BY_LENGTH[length] = {}
+
+    PATTERNS_BY_LENGTH[length][pattern] = value
+    
 
 B_pat_imm = [f"{'B'*5}", f".{'B'*4}."]
 W_pat_imm = [f"{'W'*5}", f".{'W'*4}."]
@@ -54,16 +69,36 @@ for i in range(CHECK_RADIUS * -1, CHECK_RADIUS + 1):
 
 
 
+
+
 class Evaluator():
     def __init__(self):
         self.count = 0
 
-    def static_eval(self, position: Position):
-        self.count += 1
 
-        black_score = 0
-        white_score = 0
         
+    def get_line(self, position, i, j, di, dj):
+
+        line = []
+
+        x, y = i, j
+        while 0 <= x-di < 15 and 0 <= y-dj < 15:
+            x -= di
+            y -= dj
+
+        while 0 <= x < 15 and 0 <= y < 15:
+            line.append(position[x][y])
+            x += di
+            y += dj
+
+        return line
+        
+    
+    
+
+    def static_eval(self, position: Position): # recalculate all lines
+        self.count += 1
+        score = 0
         
         
         for line in self.get_all_lines(position.position):
@@ -75,11 +110,11 @@ class Evaluator():
             #     return float('-inf')
 
 
-            black_score += self.evaluate_line(line, "B", position.turn)
-            white_score += self.evaluate_line(line, "W", position.turn)
+            score += self.evaluate_line(line)
+
         
 
-        return white_score - black_score
+        return score
 
     def immediate_win(self, line, player):
         s = ''.join(line)
@@ -88,20 +123,16 @@ class Evaluator():
         
 
 
-    def evaluate_line(self, line, player, turn):
+    def evaluate_line(self, line):
         s = ''.join(line)
 
-
         score = 0
-        if player == 'B':
-            patterns = B_pat
-        else:
-            patterns = W_pat
 
+        for length, patterns in PATTERNS_BY_LENGTH.items():
+            for i in range(len(s) - length + 1):
+                window = s[i:i+length]
 
-
-        for pattern, value in patterns.items():
-            score += s.count(pattern) * value
+                score += patterns.get(window, 0)
 
         return score
     

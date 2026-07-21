@@ -15,6 +15,8 @@ class Position():
 
         self.zobrist_hash = 0
         self.turn = GameSettings.PLAYER
+        
+        self.score = 0
 
 
 

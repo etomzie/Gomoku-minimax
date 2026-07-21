@@ -5,11 +5,14 @@ from copy import deepcopy
 import math
 import random
 from sys import stdout
+import threading
+import time
 
 from Utils.board import Board
 from Utils.position import Position
 from settings import GameSettings
 from evaluator import Evaluator
+from eval_bar import Eval_Bar
 
 pygame.init()
 
@@ -21,14 +24,15 @@ windowHeight = GameSettings.SCREEN_HEIGHT
 windowWidth = GameSettings.SCREEN_WIDTH
 
 
-screen = pygame.display.set_mode((windowWidth, windowHeight))
+offset = 40
+screen = pygame.display.set_mode((windowWidth, windowHeight + offset))
 
 pygame.display.set_caption(GameSettings.TITLE)
 
 
 board = Board()
-
 EVALUATOR = Evaluator()
+evalBar = Eval_Bar()
 
 
 DIRECTIONS = []
@@ -38,9 +42,16 @@ for i in range(CHECK_RADIUS * -1, CHECK_RADIUS + 1):
             continue
         DIRECTIONS.append((i, j))
 print(DIRECTIONS)
+D4 = [
+    (0,1),
+    (1,0),   
+    (1,1),  
+    (1,-1)   
+]
 
 
-
+engine_thinking = False
+engine_move = None
 
 
 EMPTY = '.'
@@ -77,6 +88,9 @@ transposition = {}
 
 
 
+
+
+
 def minimax(pos: Position, depth: int, maxingPlayer: bool, 
             alpha=float("-inf"), beta=float("inf")):
     global transposition
@@ -101,10 +115,7 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool,
 
 
     if depth == 0:
-        eval = EVALUATOR.static_eval(pos)
-        transposition[key] = ((pos.prev_i, pos.prev_j), eval)
-
-        return (pos.prev_i, pos.prev_j), eval
+        return (pos.prev_i, pos.prev_j), pos.score
 
     if pos.prev_i == -1 and pos.prev_j == -1:
         result = ((BOARD_SIZE // 2, BOARD_SIZE // 2), 0)
@@ -127,10 +138,24 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool,
 
         moves = list(moves)
         moves.sort(key=lambda x: EVALUATOR.quick_eval_move(pos, x), reverse=True)
+        
+        for ni, nj in moves:   
+            old_score = 0
 
-        for ni, nj in moves:        
-                
+            for di,dj in D4:
+                line = EVALUATOR.get_line(pos.position, ni, nj, di, dj)
+                old_score += EVALUATOR.evaluate_line(line)
+            
             pos.position[ni][nj] = WHITE
+            
+            new_score = 0
+
+            for di,dj in D4:
+                line = EVALUATOR.get_line(pos.position, ni, nj, di, dj)
+                new_score += EVALUATOR.evaluate_line(line)
+            pos.score += new_score - old_score
+            
+            
             pos.zobrist_hash ^= get_zobrist_value(ni, nj, WHITE)
             pos.moves.add((ni, nj))
             old_turn = pos.turn
@@ -140,18 +165,27 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool,
             pos.turn = BLACK
             pos.prev_i = ni
             pos.prev_j = nj
+            
 
             _, eval = minimax(pos, depth-1, False, alpha, beta)
 
             # undo
-            pos.zobrist_hash ^= get_zobrist_value(ni, nj, WHITE)
             pos.position[ni][nj] = EMPTY
+            pos.score -= new_score - old_score
+            
+            
+            pos.zobrist_hash ^= get_zobrist_value(ni, nj, WHITE)
+            
             pos.moves.remove((ni, nj))
 
             pos.turn = old_turn
             pos.prev_i = old_i
             pos.prev_j = old_j
             
+            
+                
+    
+                    
             if eval > maxEval:
                 best_move = (ni, nj)
                 maxEval = eval
@@ -182,7 +216,22 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool,
         moves.sort(key=lambda x: EVALUATOR.quick_eval_move(pos, x))
 
         for ni, nj in moves:
+            old_score = 0
+
+            for di,dj in D4:
+                line = EVALUATOR.get_line(pos.position, ni, nj, di, dj)
+                old_score += EVALUATOR.evaluate_line(line)
+                
             pos.position[ni][nj] = BLACK
+            
+            new_score = 0
+
+            for di,dj in D4:
+                line = EVALUATOR.get_line(pos.position, ni, nj, di, dj)
+                new_score += EVALUATOR.evaluate_line(line)
+            pos.score += new_score - old_score
+            
+            
             pos.zobrist_hash ^= get_zobrist_value(ni, nj, BLACK)
             pos.moves.add((ni, nj))
             old_turn = pos.turn
@@ -195,13 +244,17 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool,
 
             _, eval = minimax(pos, depth-1, True, alpha, beta)
 
-            # undo
-            pos.zobrist_hash ^= get_zobrist_value(ni, nj, BLACK)
+            # undop
             pos.position[ni][nj] = EMPTY
+            pos.score -= new_score - old_score
+            
+            pos.zobrist_hash ^= get_zobrist_value(ni, nj, BLACK)
             pos.moves.remove((ni, nj))
             pos.turn = old_turn
             pos.prev_i = old_i
             pos.prev_j = old_j
+            
+        
             
             if eval < minEval:
                 best_move = (ni, nj)
@@ -216,20 +269,32 @@ def minimax(pos: Position, depth: int, maxingPlayer: bool,
         return best_move, minEval 
     
 
-
 def init_minimax():
-    maxing = True if board.position.turn == 'W' else False
-    prun_val = float('-inf') if maxing else float("inf")
-    move, eval = minimax(board.position, MAX_SEARCH_DEPTH, maxing)
+    global transposition
+    transposition.clear()
+    
+    maxing = True if board.position.turn == WHITE else False
+    move, eval = minimax(deepcopy(board.position), MAX_SEARCH_DEPTH, maxing)
+    
+
+    
     print(move, eval)
+    
+
+    
     return move
     
-
     
+def start_engine_search():
+    global engine_move, engine_thinking
     
+    engine_move = init_minimax()
+    engine_thinking = False
 
 
 def main():
+    global engine_move, engine_thinking
+    
     IS_GAME_OVER = False
     while 1:
         for event in pygame.event.get():
@@ -239,16 +304,16 @@ def main():
             if IS_GAME_OVER: continue
             
             if board.position.turn == GameSettings.PLAYER:
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.MOUSEBUTTONDOWN and not engine_thinking:
                     mouse_x, mouse_y = event.pos
+                    mouse_y -= offset
                     
 
                     if (0 < int(mouse_x / TILE_SIZE) <= BOARD_SIZE) and (0 < int(mouse_y / TILE_SIZE) <= BOARD_SIZE):
                         j, i = board.snap_to_board(mouse_x, mouse_y)
-                        #board.console_check()
-                        #print(i, j)
+
                         if board.position.position[i][j] == EMPTY:
-                            if GameSettings.PLAYER == "B":
+                            if GameSettings.PLAYER == BLACK:
                                 board.place_black_piece(i, j)
                                 board.position.zobrist_hash ^= get_zobrist_value(i, j, BLACK)
                             else:
@@ -263,25 +328,34 @@ def main():
 
     
             else:
-                info_i, info_j = init_minimax()
-                
-                print(EVALUATOR.count)
+                 if not engine_thinking:
+                    engine_thinking = True
 
-                if GameSettings.AI == "B":
-                    board.place_black_piece(info_i, info_j)
-                else:
-                    board.place_white_piece(info_i, info_j)
+                    engine = threading.Thread(target = start_engine_search)
+                    engine.start()
+                    
+                    
+                    engine.join()
+                    i, j = engine_move
+                    
+                    if GameSettings.AI == "B":
+                        board.place_black_piece(i, j)
+                    else:
+                        board.place_white_piece(i, j)
 
-                board.position.prev_i = info_i
-                board.position.prev_j = info_j
-                board.position.moves.add((info_i, info_j))
-                
-                #board.console_check()
+                    board.position.prev_i = i
+                    board.position.prev_j = j
+                    board.position.moves.add((i, j))
 
-                board.position.turn = GameSettings.PLAYER
-            #board.console_check()
+                    board.position.turn = GameSettings.PLAYER
+                    
+                    evalBar.score = EVALUATOR.static_eval(board.position)
+                    
+                    engine_move = None
+                    
+                    
         if board.position.is_game_over():
-            board.end_game()
+            #board.end_game()
             IS_GAME_OVER = True
             #exit()
                 
@@ -291,10 +365,7 @@ def main():
         
 
         board.draw(screen)
-        # if not IS_GAME_OVER:
-        #     board.draw(screen)
-        # else:
-        #     board.draw_GameOver(screen)
+        evalBar.draw(screen)
 
         pygame.display.update()
 
