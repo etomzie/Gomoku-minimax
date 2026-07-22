@@ -17,9 +17,14 @@ font = pygame.font.SysFont(None, 50)
 player_Txt = font.render("Your turn!", True, (0, 0, 0))
 engine_Txt = font.render("Thinking...", True, (0, 0, 0))
 
+
+
+
 class Board():
-    def __init__(self):
+    def __init__(self, img):
         self.position = Position()
+        self.img = img
+        
 
 
     def place_black_piece(self, i, j):
@@ -40,16 +45,19 @@ class Board():
 
 
     def draw(self, screen):
-        screen.fill("#f8d182")
+        screen.fill("#f4d03f")
         
         BS = GameSettings.BOARD_SIZE
         TS = GameSettings.TILE_SIZE
         offset = 40
+        
+        screen.blit(self.img,(TS * (1), TS * (1) + offset))
+        
 
-        for i in range(BS - 1):
-            for j in range(BS - 1):
-                if i != BS and j != BS:
-                    pygame.draw.rect(screen, (0, 0, 0), (TS * (i + 1), TS * (j + 1) + offset, TS + 1, TS + 1), width = 2)
+        # for i in range(BS - 1):
+        #     for j in range(BS - 1):
+        #         if i != BS and j != BS:
+        #             pygame.draw.rect(screen, (0, 0, 0), (TS * (i + 1), TS * (j + 1) + offset, TS + 1, TS + 1), width = 2)
         
         for i in range(BS):
             for j in range(BS):

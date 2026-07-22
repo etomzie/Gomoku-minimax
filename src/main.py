@@ -28,9 +28,10 @@ offset = 40
 screen = pygame.display.set_mode((windowWidth, windowHeight + offset))
 
 pygame.display.set_caption(GameSettings.TITLE)
+board_img = pygame.image.load("assests/board.png").convert()
+board_img = pygame.transform.scale(board_img, (windowWidth - TILE_SIZE * 2, windowHeight - offset - TILE_SIZE))
 
-
-board = Board()
+board = Board(board_img)
 EVALUATOR = Evaluator()
 evalBar = Eval_Bar()
 
